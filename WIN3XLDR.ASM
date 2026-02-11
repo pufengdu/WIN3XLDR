@@ -365,9 +365,9 @@ code segment use16                     ; 16-bit code segment
     ; ======================================================================
     is_tsr proc near
 		push ax                        ; Save AX
-        mov	ax,	TSR_SIG		           ; If installed, the
-        int	2FH                        ; 2FH handler will 
-        cmp	ax, TSR_RET                ; swap AH and AL
+        mov ax, TSR_SIG                ; If installed, the
+        int 2FH                        ; 2FH handler will 
+        cmp ax, TSR_RET                ; swap AH and AL
         setz status                    ; Save the installation status
         pop ax                         ; Restore AX
         ret
@@ -476,5 +476,6 @@ code segment use16                     ; 16-bit code segment
     end_all		 label byte            ; The tail of our program
 code ends                              ; End of the code segment
 end start                              ; Program start from the start lable
+
 
 
