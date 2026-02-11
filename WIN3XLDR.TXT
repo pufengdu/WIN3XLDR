@@ -1,0 +1,70 @@
+
+WIN3XLDR - Helper program to load Windows 3.x on MS-DOS 7.1/8.0
+
+  Copyright(C) 2026 Pu-Feng Du
+
+What's WIN3XLDR?
+WIN3XLDR is a TSR program that helps loading Windows 3.x on MS-DOS 7.1/8.0. WIN3XLDR
+does not affect the ability of the system to run enhanced mode/standard mode. It only
+allows Windows 3.x to be loaded on MS-DOS 7.1/8.0. Run WIN3XLDR before you type WIN.
+You only need to do this once. You can exit Windows 3.x and restart it. If you want
+to disable this ability, run WIN3XLDR /U. Every time your machine is rebooted, run
+WIN3XLDR once before you want to load Windows 3.x with WIN command.
+
+Usage
+WIN3XLDR [/U | /?]
+  /U: Unload
+  /?: Display help message
+  By default, WIN3XLDR install itself in the memory, as a part of IO.SYS system data.
+
+Technical Details
+OSR2FIX is  commonly used to load Windows 3.x on MS-DOS 7.1/8.0. I admit that OSR2FIX
+is the best solution for this purpose in practices for retro computing. The mechanism
+of OSR2FIX is described as follows:
+  OSR2FIX patches the code below, changing CMP DI,0400 to CMP DI,0300, and JZ 4785 to
+NOP NOP. In order to support FAT32, all DOS versions with internal FAT32 support, has
+an additional  flag at DOSDATA:F5CH. When Windows 95 B (OSR2) and all higher versions
+Windows 9x/Me  initiates, it  will first call INT 2FH AX=1231H. This call will modify
+the DOSDATA:F5C  to 1.  After that, Windows initialization broadcasting is sent, with
+real mode  INT 2FH  AX=1605H. Below codes are in the handler in MS-DOS 7.1/8.0 kernel
+in handling  this broadcasting.  It compares the version and the flag. If the version
+is lower  than 4,  or if  the DOSDATA:F5CH  is still 0, the initialization process is
+terminated. The  termination process  happens when  the  control  is  transferred  to
+DOSCODE:4572H with  SI=0004. OSR2FIX prevents this from hanppening to let the handler
+go through DOSCODE:4797H.
+
+  FF3A:477F 81FF0004          CMP     DI,0400
+  FF3A:4783 7306              JAE     478B        ; Version >= 4, OK
+  FF3A:4785 BE0400            MOV     SI,0004     ; Go error and terminate
+  FF3A:4788 E9E7FD            JMP     4572
+  FF3A:478B 50                PUSH    AX
+  FF3A:478C 32C0              XOR     AL,AL
+  FF3A:478E 86065C0F          XCHG    AL,[0F5C]
+  FF3A:4792 0AC0              OR      AL,AL       ; Check flag
+  FF3A:4794 58                POP     AX
+  FF3A:4795 74EE              JZ      4785        ; Flag == 1, Go through
+
+   However, OSR2FIX  modifies IO.SYS,  this is  not very  safe, as  it may  bring  in
+unforeseen side effects. In my digging, I developed in-memory hot-fixes W3XSTART.COM,
+which modifies  necessary codes  in memory  rather than  IO.SYS file.  In my in-house
+program, I  made this  program in  a reversable mode. That program is called W3XAUTO.
+W3XAUTO scans  memory automatically  and apply correct in-memory patches according to
+system versions.  The modification  is reversable.  For anyone  want  W3XAUTO  to  be
+released, open issues in this repo.
+   All these  patches modify  IO.SYS codes,  in-memory or  in-file. In Google groups,
+russians proposed  an alternative  method, under the topic: "start Win3x under MS-DOS
+7.x(Win9x)". They  used a  simple TSR  to intercept  INT 2FH  AX=1605H to  alter  the
+version sent by Windows initialization from 3 to 4, and alter the DOSDATA:F5C.
+
+   I am  personally in favour of adapters rather than patches. Following this idea, I
+developed WIN3XLDR.COM, a TSR program that works in stealth mode and unloadable. This
+TSR  program   intercept  INT  2FH  AX=1605H,  in  this  process,  it  also  modifies
+DOSDATA:F5CH. In  this way,  no IO.SYS  code is modified, not in-file, not in-memory.
+Since the  TSR is  unloadable, this can be wrapped with the WIN command using a batch
+file. In this way, Windows 3.x can be loaded unmodified on unmodified MS-DOS 7.1/8.0.
+No patch  is needed. Someone may argue that this way needs too much memory. By making
+WIN3XLDR a stealth TSR, it requires only 64 bytes memory.
+
+   I am  fully aware that intercepting windows broadcasting in this way is evil. This
+is not  the standard  way of hooking that function. However, I have no other standard
+way to change the flag before the broadcasting reach DOS.
