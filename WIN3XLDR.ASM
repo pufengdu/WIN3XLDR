@@ -5,7 +5,7 @@
 ; Copyright(C) 2026 Dr. Pu-Feng Du.
 ;
 ; LICENSE:
-;   IO8EMMOK is free software: you can redistribute it and/or modify it under
+;   WIN3XLDR is free software: you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free Software
 ; Foundation, either version 2 of the License, or (at your option) any later
 ; version. This program is distributed in the hope that it will be useful,
@@ -476,4 +476,5 @@ code segment use16                     ; 16-bit code segment
     end_all		 label byte            ; The tail of our program
 code ends                              ; End of the code segment
 end start                              ; Program start from the start lable
+
 
